@@ -6,24 +6,37 @@ public class Board : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     public int width;
-    public int heitht;
+    public int heigth;
+    private float offsetcam = 0.5f;
     public GameObject tileObject;
+
+    public float cameraSizeOffset;
+    public float cameraVerticalOffset;
     void Start()
     {
         SetupBoard();
-        Debug.Log("inicia el programa");
+        PositionCamera();
+    }
+
+    private void PositionCamera()
+    {
+        float newPosX = (float)width / 2;
+        float newPosY = (float)heigth / 2;
+        Camera.main.transform.position = new Vector3(newPosX - offsetcam, newPosY - offsetcam + cameraVerticalOffset, -10f);
+        float horizontal = width + 1;
+        float vertical = (heigth / 2) + 1;
+        Camera.main.orthographicSize = horizontal > vertical ? horizontal + cameraSizeOffset : vertical;
+
     }
 
     private void SetupBoard()
     {
-        Debug.Log("llama al metodo");
         for (int x=0; x<width; x++)
         {
-            for (int y=0; y<heitht; y++)
+            for (int y=0; y< heigth; y++)
             {
                 var o = Instantiate(tileObject, new Vector3(x, y, -5), Quaternion.identity);
                 o.transform.parent = transform;
-                Debug.Log("cuadrito");
             }
         }
     }
