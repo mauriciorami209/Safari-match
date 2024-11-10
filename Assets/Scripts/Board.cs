@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+
 public class Board : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -14,12 +15,16 @@ public class Board : MonoBehaviour
     public float cameraVerticalOffset;
 
     public GameObject[] availablePieces;
+    
     void Start()
     {
         SetupBoard();
         PositionCamera();
         SetupPieces();
+        
     }
+
+   
 
     private void SetupPieces()
     {
@@ -59,9 +64,7 @@ public class Board : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+   
+
+
 }
