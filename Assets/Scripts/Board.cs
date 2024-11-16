@@ -10,7 +10,7 @@ public class Board : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
     public int width;
-    public int heigth;
+    public int height;
     private float offsetcam = 0.5f;
     public GameObject tileObject;
 
@@ -29,8 +29,8 @@ public class Board : MonoBehaviour
     
     void Start()
     {
-        Tiles = new Tile[width, heigth];
-        Pieces = new Piece[width, heigth];
+        Tiles = new Tile[width, height];
+        Pieces = new Piece[width, height];
 
         SetupBoard();
         PositionCamera();
@@ -42,26 +42,53 @@ public class Board : MonoBehaviour
 
     private void SetupPieces()
     {
+        int maxIterations = 50;
+        int currentIterations = 0;
         for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < heigth; y++)
+            for (int y = 0; y < height; y++)
             {
-                var selectedPiece = availablePieces[UnityEngine.Random.Range(0, availablePieces.Length)];
-                var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
-                o.transform.parent = transform;
-                Pieces[x,y] = o.GetComponent<Piece>();
-                Pieces[x, y].Setup(x, y, this);
+                currentIterations = 0;
+                var newPiece = CreatePieceAt(x, y);
+                while (HasPreviousMatches(x, y))
+                {
+                    ClearPieceAt(x, y);
+                    newPiece = CreatePieceAt(x, y);
+                    currentIterations++;
+                    if (currentIterations > maxIterations)
+                    {
+                        break;
+                    }
+                }
             }
         }
+    }
+
+    private void ClearPieceAt(int x, int y)
+    {
+        var pieceToClear = Pieces[x, y];
+        Destroy(pieceToClear.gameObject);
+
+        Pieces[x,y] = null;
+    }
+
+    private Piece CreatePieceAt(int x, int y)
+    {
+        var selectedPiece = availablePieces[UnityEngine.Random.Range(0, availablePieces.Length)];
+        var o = Instantiate(selectedPiece, new Vector3(x, y, -5), Quaternion.identity);
+        o.transform.parent = transform;
+        Pieces[x, y] = o.GetComponent<Piece>();
+        Pieces[x, y].Setup(x, y, this);
+        return Pieces[x, y];
     }
 
     private void PositionCamera()
     {
         float newPosX = (float)width / 2;
-        float newPosY = (float)heigth / 2;
+        float newPosY = (float)height / 2;
         Camera.main.transform.position = new Vector3(newPosX - offsetcam, newPosY - offsetcam + cameraVerticalOffset, -10f);
         float horizontal = width + 1;
-        float vertical = (heigth / 2) + 1;
+        float vertical = (height / 2) + 1;
         Camera.main.orthographicSize = horizontal > vertical ? horizontal + cameraSizeOffset : vertical;
 
     }
@@ -70,7 +97,7 @@ public class Board : MonoBehaviour
     {
         for (int x=0; x<width; x++)
         {
-            for (int y=0; y< heigth; y++)
+            for (int y=0; y< height; y++)
             {
                 var o = Instantiate(tileObject, new Vector3(x, y, -5), Quaternion.identity);
                 o.transform.parent = transform;
@@ -106,35 +133,83 @@ public class Board : MonoBehaviour
         Pieces[endTile.x, endTile.y] = StarPiece;
 
         yield return new WaitForSeconds(0.6f);
-        bool foundMatch = false;
+        
         var startMatches = GetMatchByPiece(startTile.x, startTile.y, 3);
         var endMatches = GetMatchByPiece(endTile.x, endTile.y, 3);
 
-        startMatches.ForEach(piece =>
-        {
-            foundMatch = true;
-            Pieces[piece.x, piece.y] = null;
-            Destroy(piece.gameObject);
-        });
-        endMatches.ForEach(piece =>
-        {
-            foundMatch = true;
-            Pieces[piece.x, piece.y] = null;
-            Destroy(piece.gameObject);
-        });
+        var allMatches = startMatches.Union(endMatches).ToList();
 
-        if (!foundMatch)
+      
+
+        if (allMatches.Count ==0 )
         {
             StarPiece.Move(startTile.x, startTile.y);
             EndPiece.Move(endTile.x, endTile.y);
             Pieces[startTile.x, startTile.y] = StarPiece;
             Pieces[endTile.x, endTile.y] = EndPiece;
         }
+        else
+        {
+            ClearPieces(allMatches);
+        }
         startTile = null;
         endTile = null;
         swappingPieces = false;
 
-        yield return = null;
+        yield return null;
+    }
+
+    private void ClearPieces(List<Piece> piecesToClear)
+    {
+        piecesToClear.ForEach(piece =>
+        {
+            ClearPieceAt(piece.x, piece.y);
+        });
+        List<int> colums = GetColums(piecesToClear);
+        List<Piece> collapsedPieces = collapseColums(colums, 0.3f);
+    }
+
+    private List<int> GetColums(List<Piece> piecesToClear)
+    {
+        var result = new List<int>();
+        piecesToClear.ForEach(piece =>
+        {
+            if (!result.Contains(piece.x))
+            {
+                result.Add(piece.x);
+            }
+        });
+        return result;
+    }
+
+    private List<Piece> collapseColums(List<int> colums, float timeToCollapse)
+    {
+        List<Piece> movingPieces = new List<Piece>();
+        for (int i=0; i< colums.Count; i++)
+        {
+            var column = colums[i];
+            for(int y = 0; y < height; y++)
+            {
+                if (Pieces[column,y]== null)
+                {
+                    for(int yplus = y + 1; yplus<height; yplus++)
+                    {
+                        if (Pieces[column, yplus] != null)
+                        {
+                            Pieces[column, yplus].Move(column,y);
+                            Pieces[column, y] = Pieces[column, yplus];
+                            if (!movingPieces.Contains(Pieces[column, y]))
+                            {
+                                movingPieces.Add(Pieces[column, y]);
+                                Pieces[column, yplus] = null;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return movingPieces;
     }
 
     public bool IsCloseTo(Tile start, Tile end)
@@ -149,6 +224,16 @@ public class Board : MonoBehaviour
         return false;
     }
 
+    bool HasPreviousMatches(int xpos, int ypos)
+    {
+        var downMatches = GetMatchByDirection(xpos, ypos, new Vector2(0, -1), 2);
+        var leftMatches = GetMatchByDirection(xpos, ypos, new Vector2(-1, 0), 2);
+
+        if (downMatches == null) downMatches = new List<Piece>();
+        if (leftMatches == null) leftMatches = new List<Piece>();
+
+        return (downMatches.Count > 0 || leftMatches.Count > 0);
+    }
     public List<Piece> GetMatchByDirection(int xpos, int ypos, Vector2 direction, int minPieces = 3)
     {
         List<Piece> matches = new List<Piece>();
@@ -156,13 +241,13 @@ public class Board : MonoBehaviour
         matches.Add(startPiece);
         int nextX;
         int nextY;
-        int maxVal = width > heigth ? width: heigth;
+        int maxVal = width > height ? width: height;
 
         for (int i=1; i<maxVal; i++)
         {
             nextX = xpos + ((int)direction.x * i);
             nextY = ypos + ((int)direction.y * i);
-            if(nextX >= 0 && nextX < width && nextY >= 0 && nextY < heigth)
+            if(nextX >= 0 && nextX < width && nextY >= 0 && nextY < height)
             {
                 var nextPiece = Pieces[nextX, nextY];
                 if(nextPiece!=null && nextPiece.pieceType == startPiece.pieceType)
