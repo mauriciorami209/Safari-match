@@ -368,8 +368,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a6cd79c87169c04e8cfeb9c37d0587f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  timeBetweenPieces: 0.05
   width: 6
-  heigth: 10
+  height: 10
   tileObject: {fileID: 7313759216657508696, guid: e56b8c296c099d94db60e2970e26113e, type: 3}
   cameraSizeOffset: 0
   cameraVerticalOffset: 0
