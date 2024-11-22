@@ -9,7 +9,7 @@ public class Board : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
 
-    public float timeBetweenPieces = 0.05f;
+    public float timeBetweenPieces = 0.02f;
     public int width;
     public int height;
     private float offsetcam = 0.5f;
@@ -155,7 +155,7 @@ public class Board : MonoBehaviour
         Pieces[startTile.x, startTile.y] = EndPiece;
         Pieces[endTile.x, endTile.y] = StarPiece;
 
-        yield return new WaitForSeconds(0.6f);
+        yield return new WaitForSeconds(0.1f);
         
         var startMatches = GetMatchByPiece(startTile.x, startTile.y, 3);
         var endMatches = GetMatchByPiece(endTile.x, endTile.y, 3);
@@ -201,7 +201,7 @@ public class Board : MonoBehaviour
 
    IEnumerator FindMatchsRecursivelyCoroutine(List<Piece> collapsedPieces)
     {
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.3f);
         List<Piece> newMatches = new List<Piece>();
         collapsedPieces.ForEach(piece =>
         {
