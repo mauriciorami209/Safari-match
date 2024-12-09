@@ -37,11 +37,28 @@ public class Board : MonoBehaviour
 
         SetupBoard();
         PositionCamera();
-        StartCoroutine(SetupPieces());
-        
+        if(GameManager.Instance.gameState == GameManager.GameState.InGame)
+        {
+            StartCoroutine(SetupPieces());
+        }
+        GameManager.Instance.OnGameStateUpdated.AddListener(OnGameStateUpdated);   
     }
+    private void OnDestroy()
+    {
+        GameManager.Instance.OnGameStateUpdated.RemoveListener(OnGameStateUpdated);
 
-   
+    }
+    private void OnGameStateUpdated(GameManager.GameState newState)
+    {
+        if(newState == GameManager.GameState.InGame)
+        {
+            StartCoroutine(SetupPieces());
+        }
+        if(newState == GameManager.GameState.GameOver)
+        {
+            ClearAllPieces();
+        }
+    }
 
     private IEnumerator SetupPieces()
     {
@@ -81,6 +98,16 @@ public class Board : MonoBehaviour
         Pieces[x,y] = null;
     }
 
+    private void ClearAllPieces()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                ClearPieceAt(x, y);
+            }
+        }
+    }
     private Piece CreatePieceAt(int x, int y)
     {
         var selectedPiece = availablePieces[UnityEngine.Random.Range(0, availablePieces.Length)];
@@ -150,6 +177,9 @@ public class Board : MonoBehaviour
         swappingPieces = true;
         var StarPiece = Pieces[startTile.x, startTile.y];
         var EndPiece = Pieces[endTile.x, endTile.y];
+
+        AudioManager.Instance.Move();
+
         StarPiece.Move(endTile.x, endTile.y);
         EndPiece.Move(startTile.x, startTile.y);
         Pieces[startTile.x, startTile.y] = EndPiece;
@@ -166,6 +196,7 @@ public class Board : MonoBehaviour
 
         if (allMatches.Count ==0 )
         {
+            AudioManager.Instance.Miss();
             StarPiece.Move(startTile.x, startTile.y);
             EndPiece.Move(endTile.x, endTile.y);
             Pieces[startTile.x, startTile.y] = StarPiece;
